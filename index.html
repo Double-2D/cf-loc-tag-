@@ -206,4 +206,59 @@
                     // 2. Lọc loại trừ (Exclusive Filter)
                     // Kiểm tra xem bài tập có chứa BẤT KỲ tag nào nằm trong danh sách excludeTags không
                     const pTagsLowercase = p.tags.map(t => t.toLowerCase());
-                    const hasExcludedTag = excludeTags.some(exTag => pTagsLowercase.
+                    const hasExcludedTag = excludeTags.some(exTag => pTagsLowercase.includes(exTag));
+                    
+                    if (hasExcludedTag) continue; // Nếu có tag bị cấm -> Bỏ qua bài này luôn
+
+                    // Nếu qua được các bước lọc trên thì đưa vào mảng kết quả
+                    filteredProblems.push({
+                        ...p,
+                        solvedCount: statistics[i].solvedCount
+                    });
+                }
+
+                // Sắp xếp theo số người giải giảm dần (hoặc thay bằng p.rating để xếp theo độ khó)
+                filteredProblems.sort((a, b) => b.solvedCount - a.solvedCount);
+
+                const displayLimit = 100;
+                const totalFound = filteredProblems.length;
+                const displayData = filteredProblems.slice(0, displayLimit);
+
+                if (displayData.length === 0) {
+                    statusDiv.textContent = "Không tìm thấy bài tập nào thỏa mãn điều kiện lọc của bạn.";
+                } else {
+                    statusDiv.innerHTML = `Tìm thấy <strong>${totalFound}</strong> bài. (Hiển thị top ${displayData.length} bài nhiều người giải nhất).`;
+                    
+                    displayData.forEach(p => {
+                        const tr = document.createElement('tr');
+                        const problemUrl = `https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`;
+                        
+                        // Đánh dấu đậm các tag được tìm kiếm để dễ nhìn
+                        const formattedTags = p.tags.map(t => {
+                            if (includeTags.includes(t.toLowerCase())) {
+                                return `<span class="tag-highlight">${t}</span>`;
+                            }
+                            return t;
+                        }).join(', ');
+
+                        tr.innerHTML = `
+                            <td>${p.contestId}${p.index}</td>
+                            <td><a href="${problemUrl}" target="_blank">${p.name}</a></td>
+                            <td><strong>${p.rating}</strong></td>
+                            <td class="problem-tags">${formattedTags}</td>
+                            <td>${p.solvedCount}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                    resultTable.style.display = "table";
+                }
+            } catch (error) {
+                statusDiv.textContent = "Đã xảy ra lỗi: " + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Lọc Bài Tập";
+            }
+        }
+    </script>
+</body>
+</html>
