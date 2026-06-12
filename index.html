@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <title>Codeforces Problem Filter (Bao gồm & Loại trừ)</title>
+    <style>
+        :root {
+            --primary: #0366d6;
+            --danger: #cb2431;
+            --bg-color: #f6f8fa;
+            --border-color: #e1e4e8;
+            --text-main: #24292e;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 { text-align: center; color: var(--text-main); }
+        .filter-container {
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .rating-container {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+        .form-group label.exclude { color: var(--danger); }
+        input[type="text"], input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input[type="number"] { width: 120px; }
+        button {
+            background-color: #2ea44f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            height: 36px;
+        }
+        button:hover { background-color: #2c974b; }
+        button:disabled { background-color: #94d3a2; cursor: not-allowed; }
+        
+        .popular-tags { margin-top: 8px; font-size: 12px; }
+        .tag-badge {
+            display: inline-block;
+            background: #e1e4e8;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin: 2px;
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: none;
+        }
+        .tag-badge.include:hover { background: #c8e1ff; color: #0366d6; }
+        .tag-badge.exclude:hover { background: #ffdce0; color: #cb2431; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #f1f8ff; font-weight: 600; }
+        tr:hover { background-color: #f6f8fa; }
+        a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        a:hover { text-decoration: underline; }
+        .problem-tags { font-size: 12px; color: #586069; }
+        .tag-highlight { background-color: #f1f8ff; padding: 2px 4px; border-radius: 4px; border: 1px solid #c8e1ff; }
+        .status { text-align: center; font-style: italic; color: #586069; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Codeforces Problem Filter</h1>
+
+    <div class="filter-container">
+        <div class="form-group">
+            <label for="includeTags">✅ BẮT BUỘC CÓ (cách nhau bằng dấu phẩy):</label>
+            <input type="text" id="includeTags" placeholder="VD: dp, math">
+            <div class="popular-tags" id="popular-include"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="excludeTags" class="exclude">❌ TUYỆT ĐỐI KHÔNG CÓ (loại trừ):</label>
+            <input type="text" id="excludeTags" placeholder="VD: constructive algorithms, geometry">
+            <div class="popular-tags" id="popular-exclude"></div>
+        </div>
+
+        <div class="rating-container">
+            <div class="form-group">
+                <label for="minRating">Rating Min:</label>
+                <input type="number" id="minRating" value="800" step="100">
+            </div>
+            <div class="form-group">
+                <label for="maxRating">Rating Max:</label>
+                <input type="number" id="maxRating" value="2000" step="100">
+            </div>
+            <button id="searchBtn" onclick="fetchProblems()">Lọc Bài Tập</button>
+        </div>
+    </div>
+
+    <div id="status" class="status">Hãy nhập chủ đề và bấm Lọc Bài Tập.</div>
+
+    <table id="resultTable" style="display: none;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên Bài</th>
+                <th>Rating</th>
+                <th>Tags</th>
+                <th>Số người giải</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+        const commonTags = ['dp', 'math', 'greedy', 'graphs', 'data structures', 'binary search', 'constructive algorithms', 'geometry', 'brute force', 'strings'];
+        
+        // Hàm hỗ trợ tạo gợi ý click cho nhanh
+        function renderTagBadges(containerId, inputId, typeClass) {
+            const container = document.getElementById(containerId);
+            commonTags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = `tag-badge ${typeClass}`;
+                span.textContent = tag;
+                span.onclick = () => {
+                    const input = document.getElementById(inputId);
+                    let currentVals = input.value.split(',').map(s => s.trim()).filter(s => s);
+                    if (!currentVals.includes(tag)) {
+                        currentVals.push(tag);
+                        input.value = currentVals.join(', ');
+                    }
+                };
+                container.appendChild(span);
+            });
+        }
+
+        renderTagBadges('popular-include', 'includeTags', 'include');
+        renderTagBadges('popular-exclude', 'excludeTags', 'exclude');
+
+        async function fetchProblems() {
+            // Lấy input và chuẩn hóa thành mảng
+            const includeInput = document.getElementById('includeTags').value;
+            const excludeInput = document.getElementById('excludeTags').value;
+            
+            const includeTags = includeInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
+            const excludeTags = excludeInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
+            
+            const minRating = parseInt(document.getElementById('minRating').value) || 0;
+            const maxRating = parseInt(document.getElementById('maxRating').value) || 4000;
+            
+            const btn = document.getElementById('searchBtn');
+            const statusDiv = document.getElementById('status');
+            const tableBody = document.getElementById('tableBody');
+            const resultTable = document.getElementById('resultTable');
+
+            btn.disabled = true;
+            btn.textContent = "Đang tải...";
+            statusDiv.textContent = "Đang lấy dữ liệu từ Codeforces...";
+            resultTable.style.display = "none";
+            tableBody.innerHTML = "";
+
+            try {
+                // Chỉ lấy API dựa trên tag "Bắt buộc có" (inclusive)
+                const apiTagsQuery = includeTags.join(';');
+                const url = `https://codeforces.com/api/problemset.problems${apiTagsQuery ? '?tags=' + apiTagsQuery : ''}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status !== "OK") throw new Error(data.comment || "Lỗi API Codeforces");
+
+                const problems = data.result.problems;
+                const statistics = data.result.problemStatistics;
+
+                let filteredProblems = [];
+
+                // LỌC Ở PHÍA CLIENT (Loại bỏ tag, xét Rating)
+                for (let i = 0; i < problems.length; i++) {
+                    const p = problems[i];
+                    
+                    // 1. Lọc Rating
+                    if (!p.rating || p.rating < minRating || p.rating > maxRating) continue;
+
+                    // 2. Lọc loại trừ (Exclusive Filter)
+                    // Kiểm tra xem bài tập có chứa BẤT KỲ tag nào nằm trong danh sách excludeTags không
+                    const pTagsLowercase = p.tags.map(t => t.toLowerCase());
+                    const hasExcludedTag = excludeTags.some(exTag => pTagsLowercase.
