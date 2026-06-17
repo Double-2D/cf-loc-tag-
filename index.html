@@ -124,7 +124,7 @@
 </head>
 <body>
 
-    <h1>Codeforces Problem Filter</h1>
+    <h1>Codeforces Problem Filter Pro</h1>
 
     <div class="filter-container">
         <div class="form-group">
@@ -213,7 +213,7 @@
             }
         }
 
-async function fetchProblems() {
+        async function fetchProblems() {
             const includeInput = document.getElementById('includeTags').value;
             const excludeInput = document.getElementById('excludeTags').value;
             const handleInput = document.getElementById('cfHandle').value.trim();
@@ -241,15 +241,16 @@ async function fetchProblems() {
                 let solvedProblems = new Set();
                 if (handleInput !== "") {
                     statusDiv.textContent = `Đang lấy dữ liệu các bài đã giải của [${handleInput}]...`;
-                    // THÊM lang=en VÀO API USER STATUS
-                    const userRes = await fetch(`https://codeforces.com/api/user.status?handle=${handleInput}&lang=en`);
+                    
+                    // Thêm lang=en và cache buster cho API user status
+                    const userUrl = `https://codeforces.com/api/user.status?handle=${handleInput}&lang=en&_=${Date.now()}`;
+                    const userRes = await fetch(userUrl, { cache: "no-store" });
                     const userData = await userRes.json();
                     
                     if (userData.status === "OK") {
                         // Lọc các submission có verdict là OK (Accepted)
                         userData.result.forEach(sub => {
                             if (sub.verdict === "OK" && sub.problem) {
-                                // Ghép ID bài toán (Ví dụ: "123-A") để tạo key duy nhất
                                 solvedProblems.add(`${sub.problem.contestId}-${sub.problem.index}`);
                             }
                         });
@@ -263,11 +264,18 @@ async function fetchProblems() {
 
                 // 2. Lấy danh sách bài tập theo Tag
                 statusDiv.textContent = "Đang lấy danh sách bài tập từ Codeforces...";
-                const apiTagsQuery = includeTags.map(t => encodeURIComponent(t)).join(';');
-                // THÊM ?lang=en VÀO API PROBLEMSET ĐỂ ÉP TIẾNG ANH
-                const url = `https://codeforces.com/api/problemset.problems?lang=en${apiTagsQuery ? '&tags=' + apiTagsQuery : ''}`;
                 
-                const response = await fetch(url);
+                // Sử dụng URLSearchParams kết hợp Date.now() để phá Cache
+                const params = new URLSearchParams({ lang: 'en' });
+                if (includeTags.length > 0) {
+                    params.append('tags', includeTags.join(';'));
+                }
+                params.append('_', Date.now()); // Ép Cloudflare tải mới
+                
+                const url = `https://codeforces.com/api/problemset.problems?${params.toString()}`;
+                
+                // { cache: "no-store" } để ép trình duyệt bỏ qua cache cục bộ
+                const response = await fetch(url, { cache: "no-store" });
                 const data = await response.json();
 
                 if (data.status !== "OK") {
@@ -317,7 +325,7 @@ async function fetchProblems() {
                         // Kiểm tra xem bài này user đã giải chưa
                         const isSolved = solvedProblems.has(problemKey);
                         if (isSolved) {
-                            tr.classList.add('row-solved'); // Tô màu nền nguyên hàng nếu đã giải
+                            tr.classList.add('row-solved');
                         }
 
                         const statusHtml = isSolved 
