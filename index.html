@@ -213,7 +213,7 @@
             }
         }
 
-        async function fetchProblems() {
+async function fetchProblems() {
             const includeInput = document.getElementById('includeTags').value;
             const excludeInput = document.getElementById('excludeTags').value;
             const handleInput = document.getElementById('cfHandle').value.trim();
@@ -241,7 +241,8 @@
                 let solvedProblems = new Set();
                 if (handleInput !== "") {
                     statusDiv.textContent = `Đang lấy dữ liệu các bài đã giải của [${handleInput}]...`;
-                    const userRes = await fetch(`https://codeforces.com/api/user.status?handle=${handleInput}`);
+                    // THÊM lang=en VÀO API USER STATUS
+                    const userRes = await fetch(`https://codeforces.com/api/user.status?handle=${handleInput}&lang=en`);
                     const userData = await userRes.json();
                     
                     if (userData.status === "OK") {
@@ -263,7 +264,8 @@
                 // 2. Lấy danh sách bài tập theo Tag
                 statusDiv.textContent = "Đang lấy danh sách bài tập từ Codeforces...";
                 const apiTagsQuery = includeTags.map(t => encodeURIComponent(t)).join(';');
-                const url = `https://codeforces.com/api/problemset.problems${apiTagsQuery ? '?tags=' + apiTagsQuery : ''}`;
+                // THÊM ?lang=en VÀO API PROBLEMSET ĐỂ ÉP TIẾNG ANH
+                const url = `https://codeforces.com/api/problemset.problems?lang=en${apiTagsQuery ? '&tags=' + apiTagsQuery : ''}`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
