@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Codeforces Problem Filter Pro</title>
     <style>
         :root {
@@ -83,11 +83,17 @@
         .tag-badge.include:hover { background: #c8e1ff; color: #0366d6; }
         .tag-badge.exclude:hover { background: #ffdce0; color: #cb2431; }
 
+        .checkbox-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-left: auto;
+        }
+
         .checkbox-group {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-left: auto;
             font-weight: 600;
             font-size: 14px;
             color: var(--danger);
@@ -95,6 +101,8 @@
             user-select: none;
         }
         .checkbox-group input { width: 16px; height: 16px; cursor: pointer; }
+        /* Tùy chỉnh màu chữ riêng cho ô checkbox ẩn bài đã giải */
+        .checkbox-group.text-success { color: var(--success); }
 
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; margin-top: 20px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
@@ -114,6 +122,9 @@
         
         .hide-tags-table th.col-tags,
         .hide-tags-table td.col-tags { display: none; }
+        
+        /* Class để ẩn toàn bộ bài đã AC bằng CSS */
+        .hide-ac-table tr.row-solved { display: none !important; }
         
         .status { text-align: center; font-weight: 600; padding: 15px; border-radius: 6px; margin: 10px 0; }
         .status.default { background-color: #e1e4e8; color: #24292e; }
@@ -156,10 +167,16 @@
 
             <button id="searchBtn" onclick="fetchProblems()">Lọc Bài Tập Ngay</button>
             
-            <label class="checkbox-group">
-                <input type="checkbox" id="hideTagsCheckbox" onchange="toggleTags()">
-                Ẩn cột Tags (Tránh bị spoil)
-            </label>
+            <div class="checkbox-container">
+                <label class="checkbox-group text-success">
+                    <input type="checkbox" id="hideACCheckbox" onchange="toggleAC()">
+                    Ẩn bài đã giải (AC)
+                </label>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="hideTagsCheckbox" onchange="toggleTags()">
+                    Ẩn cột Tags (Tránh bị spoil)
+                </label>
+            </div>
         </div>
     </div>
 
@@ -213,10 +230,21 @@
             }
         }
 
+        function toggleAC() {
+            const table = document.getElementById('resultTable');
+            const checkbox = document.getElementById('hideACCheckbox');
+            if (checkbox.checked) {
+                table.classList.add('hide-ac-table');
+            } else {
+                table.classList.remove('hide-ac-table');
+            }
+        }
+
         async function fetchProblems() {
             const includeInput = document.getElementById('includeTags').value;
             const excludeInput = document.getElementById('excludeTags').value;
             const handleInput = document.getElementById('cfHandle').value.trim();
+            const hideAC = document.getElementById('hideACCheckbox').checked;
             
             const includeTags = includeInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
             const excludeTags = excludeInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
@@ -242,13 +270,11 @@
                 if (handleInput !== "") {
                     statusDiv.textContent = `Đang lấy dữ liệu các bài đã giải của [${handleInput}]...`;
                     
-                    // Thêm lang=en và cache buster cho API user status
                     const userUrl = `https://codeforces.com/api/user.status?handle=${handleInput}&lang=en&_=${Date.now()}`;
                     const userRes = await fetch(userUrl, { cache: "no-store" });
                     const userData = await userRes.json();
                     
                     if (userData.status === "OK") {
-                        // Lọc các submission có verdict là OK (Accepted)
                         userData.result.forEach(sub => {
                             if (sub.verdict === "OK" && sub.problem) {
                                 solvedProblems.add(`${sub.problem.contestId}-${sub.problem.index}`);
@@ -258,23 +284,19 @@
                         throw new Error(`Không tìm thấy tài khoản "${handleInput}" hoặc tài khoản không hợp lệ.`);
                     }
                     
-                    // Delay nhẹ để tránh lỗi "Call limit exceeded" khi gọi API tiếp theo
                     await new Promise(r => setTimeout(r, 500));
                 }
 
                 // 2. Lấy danh sách bài tập theo Tag
                 statusDiv.textContent = "Đang lấy danh sách bài tập từ Codeforces...";
                 
-                // Sử dụng URLSearchParams kết hợp Date.now() để phá Cache
                 const params = new URLSearchParams({ lang: 'en' });
                 if (includeTags.length > 0) {
                     params.append('tags', includeTags.join(';'));
                 }
-                params.append('_', Date.now()); // Ép Cloudflare tải mới
+                params.append('_', Date.now()); 
                 
                 const url = `https://codeforces.com/api/problemset.problems?${params.toString()}`;
-                
-                // { cache: "no-store" } để ép trình duyệt bỏ qua cache cục bộ
                 const response = await fetch(url, { cache: "no-store" });
                 const data = await response.json();
 
@@ -290,7 +312,11 @@
                 // 3. Lọc bài tập
                 for (let i = 0; i < problems.length; i++) {
                     const p = problems[i];
+                    const problemKey = `${p.contestId}-${p.index}`;
                     
+                    // Nếu user đã AC bài này VÀ chọn "Ẩn bài đã giải", ta bỏ qua luôn bài này
+                    if (hideAC && solvedProblems.has(problemKey)) continue;
+
                     if (!p.rating || p.rating < minRating || p.rating > maxRating) continue;
 
                     const pTagsLowercase = (p.tags || []).map(t => t.toLowerCase());
@@ -300,7 +326,8 @@
 
                     filteredProblems.push({
                         ...p,
-                        solvedCount: statistics[i].solvedCount
+                        solvedCount: statistics[i].solvedCount,
+                        isSolved: solvedProblems.has(problemKey) // Lưu lại trạng thái AC
                     });
                 }
 
@@ -320,15 +347,12 @@
                     displayData.forEach(p => {
                         const tr = document.createElement('tr');
                         const problemUrl = `https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`;
-                        const problemKey = `${p.contestId}-${p.index}`;
                         
-                        // Kiểm tra xem bài này user đã giải chưa
-                        const isSolved = solvedProblems.has(problemKey);
-                        if (isSolved) {
+                        if (p.isSolved) {
                             tr.classList.add('row-solved');
                         }
 
-                        const statusHtml = isSolved 
+                        const statusHtml = p.isSolved 
                             ? `<span class="badge-solved">✅ Đã giải</span>` 
                             : `<span class="badge-unsolved">-</span>`;
 
@@ -348,7 +372,10 @@
                         tableBody.appendChild(tr);
                     });
                     
+                    // Cập nhật trạng thái hiển thị của các cột/dòng dựa trên checkbox
                     toggleTags();
+                    toggleAC(); 
+                    
                     resultTable.style.display = "table";
                 }
             } catch (error) {
