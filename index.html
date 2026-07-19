@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +17,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -69,13 +69,23 @@
         button:hover { background-color: #2c974b; }
         button:disabled { background-color: #94d3a2; cursor: not-allowed; }
         
-        .popular-tags { margin-top: 8px; font-size: 13px; }
+        /* Nút Load More Style */
+        #loadMoreBtn {
+            background-color: #0366d6;
+            margin-top: 15px;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        #loadMoreBtn:hover { background-color: #005cc5; }
+
+        .popular-tags { margin-top: 8px; font-size: 12px; line-height: 1.8;}
         .tag-badge {
             display: inline-block;
             background: #e1e4e8;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 12px;
-            margin: 3px;
+            margin: 2px;
             cursor: pointer;
             transition: background 0.2s;
             user-select: none;
@@ -101,7 +111,6 @@
             user-select: none;
         }
         .checkbox-group input { width: 16px; height: 16px; cursor: pointer; }
-        /* Tùy chỉnh màu chữ riêng cho ô checkbox ẩn bài đã giải */
         .checkbox-group.text-success { color: var(--success); }
 
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; margin-top: 20px; }
@@ -109,7 +118,6 @@
         th { background-color: #f1f8ff; font-weight: 600; }
         tr:hover { background-color: #f6f8fa; }
         
-        /* Hiệu ứng cho bài đã giải */
         tr.row-solved { background-color: #f0fdf4; }
         tr.row-solved:hover { background-color: #dcfce7; }
         .badge-solved { background-color: var(--success); color: white; padding: 3px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; }
@@ -123,7 +131,6 @@
         .hide-tags-table th.col-tags,
         .hide-tags-table td.col-tags { display: none; }
         
-        /* Class để ẩn toàn bộ bài đã AC bằng CSS */
         .hide-ac-table tr.row-solved { display: none !important; }
         
         .status { text-align: center; font-weight: 600; padding: 15px; border-radius: 6px; margin: 10px 0; }
@@ -139,69 +146,88 @@
 
     <div class="filter-container">
         <div class="form-group">
-            <label for="includeTags">✅ BẮT BUỘC CÓ (cách nhau bằng dấu phẩy):</label>
-            <input type="text" id="includeTags" placeholder="VD: dp, math, data structures">
+            <label for="includeTags">✅ INCLUDE TAGS (comma-separated):</label>
+            <input type="text" id="includeTags" placeholder="e.g., dp, math, data structures">
             <div class="popular-tags" id="popular-include"></div>
         </div>
 
         <div class="form-group">
-            <label for="excludeTags" class="exclude">❌ TUYỆT ĐỐI KHÔNG CÓ (loại trừ):</label>
-            <input type="text" id="excludeTags" placeholder="VD: constructive algorithms, geometry">
+            <label for="excludeTags" class="exclude">❌ EXCLUDE TAGS (comma-separated):</label>
+            <input type="text" id="excludeTags" placeholder="e.g., constructive algorithms, geometry">
             <div class="popular-tags" id="popular-exclude"></div>
         </div>
 
         <div class="rating-container">
             <div class="form-group" style="width: 150px;">
-                <label for="minRating">Rating Min:</label>
+                <label for="minRating">Min Rating:</label>
                 <input type="number" id="minRating" value="800" step="100">
             </div>
             <div class="form-group" style="width: 150px;">
-                <label for="maxRating">Rating Max:</label>
+                <label for="maxRating">Max Rating:</label>
                 <input type="number" id="maxRating" value="2000" step="100">
             </div>
             
             <div class="form-group" style="width: 200px;">
-                <label for="cfHandle" class="handle">👤 Tài khoản CF (Tùy chọn):</label>
-                <input type="text" id="cfHandle" placeholder="VD: tourist">
+                <label for="cfHandle" class="handle">👤 CF Handle (Optional):</label>
+                <input type="text" id="cfHandle" placeholder="e.g., tourist">
             </div>
 
-            <button id="searchBtn" onclick="fetchProblems()">Lọc Bài Tập Ngay</button>
+            <button id="searchBtn" onclick="fetchProblems()">Filter Problems</button>
             
             <div class="checkbox-container">
                 <label class="checkbox-group text-success">
                     <input type="checkbox" id="hideACCheckbox" onchange="toggleAC()">
-                    Ẩn bài đã giải (AC)
+                    Hide solved problems (AC)
                 </label>
                 <label class="checkbox-group">
                     <input type="checkbox" id="hideTagsCheckbox" onchange="toggleTags()">
-                    Ẩn cột Tags (Tránh bị spoil)
+                    Hide Tags column (No spoilers)
                 </label>
             </div>
         </div>
     </div>
 
-    <div id="status" class="status default">Hãy chọn các chủ đề bạn muốn và bấm nút Lọc Bài Tập.</div>
+    <div id="status" class="status default">Select your desired topics and click Filter Problems.</div>
 
     <table id="resultTable" style="display: none;">
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Tên Bài</th>
-                <th>Trạng thái</th>
+                <th>Problem Name</th>
+                <th>Status</th>
                 <th>Rating</th>
                 <th class="col-tags">Tags</th>
-                <th>Số người giải</th>
+                <th>Solved By</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
 
+    <div id="loadMoreContainer" style="text-align: center; display: none;">
+        <button id="loadMoreBtn" onclick="loadMore()">Hiển thị thêm 100 bài tiếp theo</button>
+    </div>
+
     <script>
-        const commonTags = ['dp', 'math', 'greedy', 'graphs', 'data structures', 'binary search', 'constructive algorithms', 'geometry', 'brute force', 'strings', 'number theory', 'sortings'];
+        // Full list of official Codeforces tags
+        const allCfTags = [
+            '2-sat', 'binary search', 'bitmasks', 'brute force', 'chinese theorem',
+            'combinatorics', 'constructive algorithms', 'data structures', 'dfs and similar',
+            'divide and conquer', 'dp', 'dsu', 'expression parsing', 'fft', 'flows',
+            'games', 'geometry', 'graph matchings', 'graphs', 'greedy', 'hashing',
+            'implementation', 'interactive', 'math', 'matrices', 'meet-in-the-middle',
+            'number theory', 'probabilities', 'schedules', 'shortest paths', 'sortings',
+            'string suffix structures', 'strings', 'ternary search', 'trees', 'two pointers'
+        ];
         
+        // Biến toàn cục để xử lý chức năng Load More
+        let globalFilteredProblems = [];
+        let globalCurrentIndex = 0;
+        const chunkSize = 100;
+        let currentIncludeTags = [];
+
         function renderTagBadges(containerId, inputId, typeClass) {
             const container = document.getElementById(containerId);
-            commonTags.forEach(tag => {
+            allCfTags.forEach(tag => {
                 const span = document.createElement('span');
                 span.className = `tag-badge ${typeClass}`;
                 span.textContent = tag;
@@ -240,6 +266,59 @@
             }
         }
 
+        // Hàm render từng cụm bài tập (100 bài/lần)
+        function loadMore() {
+            const tableBody = document.getElementById('tableBody');
+            const statusDiv = document.getElementById('status');
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            
+            const nextIndex = Math.min(globalCurrentIndex + chunkSize, globalFilteredProblems.length);
+            const problemsToRender = globalFilteredProblems.slice(globalCurrentIndex, nextIndex);
+
+            problemsToRender.forEach(p => {
+                const tr = document.createElement('tr');
+                const problemUrl = `https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`;
+                
+                if (p.isSolved) {
+                    tr.classList.add('row-solved');
+                }
+
+                const statusHtml = p.isSolved 
+                    ? `<span class="badge-solved">✅ Solved</span>` 
+                    : `<span class="badge-unsolved">-</span>`;
+
+                const formattedTags = (p.tags || []).map(t => {
+                    if (currentIncludeTags.includes(t.toLowerCase())) return `<span class="tag-highlight">${t}</span>`;
+                    return t;
+                }).join(', ');
+
+                tr.innerHTML = `
+                    <td>${p.contestId}${p.index}</td>
+                    <td><a href="${problemUrl}" target="_blank">${p.name}</a></td>
+                    <td>${statusHtml}</td>
+                    <td style="color: #0366d6;"><strong>${p.rating}</strong></td>
+                    <td class="col-tags problem-tags">${formattedTags}</td>
+                    <td>${p.solvedCount}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            globalCurrentIndex = nextIndex;
+
+            // Cập nhật text trạng thái
+            statusDiv.innerHTML = `✅ Found <strong>${globalFilteredProblems.length}</strong> problems. (Showing top ${globalCurrentIndex}).`;
+
+            // Ẩn/Hiện nút Load More
+            if (globalCurrentIndex >= globalFilteredProblems.length) {
+                loadMoreContainer.style.display = "none";
+            } else {
+                loadMoreContainer.style.display = "block";
+            }
+
+            toggleTags();
+            toggleAC(); 
+        }
+
         async function fetchProblems() {
             const includeInput = document.getElementById('includeTags').value;
             const excludeInput = document.getElementById('excludeTags').value;
@@ -256,19 +335,26 @@
             const statusDiv = document.getElementById('status');
             const tableBody = document.getElementById('tableBody');
             const resultTable = document.getElementById('resultTable');
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
 
             btn.disabled = true;
-            btn.textContent = "⏳ Đang tải...";
+            btn.textContent = "⏳ Loading...";
             statusDiv.className = "status loading";
-            statusDiv.textContent = "Đang kết nối đến máy chủ Codeforces... Vui lòng đợi vài giây.";
+            statusDiv.textContent = "Connecting to Codeforces server... Please wait a few seconds.";
             resultTable.style.display = "none";
+            loadMoreContainer.style.display = "none";
             tableBody.innerHTML = "";
+            
+            // Reset state
+            globalFilteredProblems = [];
+            globalCurrentIndex = 0;
+            currentIncludeTags = includeTags;
 
             try {
-                // 1. Lấy danh sách bài tập đã AC của user (Nếu có nhập handle)
+                // 1. Fetch solved problems for the user (if handle is provided)
                 let solvedProblems = new Set();
                 if (handleInput !== "") {
-                    statusDiv.textContent = `Đang lấy dữ liệu các bài đã giải của [${handleInput}]...`;
+                    statusDiv.textContent = `Fetching solved problems for [${handleInput}]...`;
                     
                     const userUrl = `https://codeforces.com/api/user.status?handle=${handleInput}&lang=en&_=${Date.now()}`;
                     const userRes = await fetch(userUrl, { cache: "no-store" });
@@ -281,14 +367,14 @@
                             }
                         });
                     } else {
-                        throw new Error(`Không tìm thấy tài khoản "${handleInput}" hoặc tài khoản không hợp lệ.`);
+                        throw new Error(`Handle "${handleInput}" not found or invalid.`);
                     }
                     
                     await new Promise(r => setTimeout(r, 500));
                 }
 
-                // 2. Lấy danh sách bài tập theo Tag
-                statusDiv.textContent = "Đang lấy danh sách bài tập từ Codeforces...";
+                // 2. Fetch problems by Tags
+                statusDiv.textContent = "Fetching problem list from Codeforces...";
                 
                 const params = new URLSearchParams({ lang: 'en' });
                 if (includeTags.length > 0) {
@@ -301,20 +387,18 @@
                 const data = await response.json();
 
                 if (data.status !== "OK") {
-                    throw new Error(data.comment || "Lỗi API Codeforces không xác định.");
+                    throw new Error(data.comment || "Unknown Codeforces API error.");
                 }
 
                 const problems = data.result.problems;
                 const statistics = data.result.problemStatistics;
 
-                let filteredProblems = [];
-
-                // 3. Lọc bài tập
+                // 3. Filter the problems
                 for (let i = 0; i < problems.length; i++) {
                     const p = problems[i];
                     const problemKey = `${p.contestId}-${p.index}`;
                     
-                    // Nếu user đã AC bài này VÀ chọn "Ẩn bài đã giải", ta bỏ qua luôn bài này
+                    // Skip if user has solved it AND wants them hidden
                     if (hideAC && solvedProblems.has(problemKey)) continue;
 
                     if (!p.rating || p.rating < minRating || p.rating > maxRating) continue;
@@ -324,77 +408,42 @@
                     
                     if (hasExcludedTag) continue;
 
-                    filteredProblems.push({
+                    globalFilteredProblems.push({
                         ...p,
                         solvedCount: statistics[i].solvedCount,
-                        isSolved: solvedProblems.has(problemKey) // Lưu lại trạng thái AC
+                        isSolved: solvedProblems.has(problemKey) // Save AC status
                     });
                 }
 
-                filteredProblems.sort((a, b) => b.solvedCount - a.solvedCount);
+                globalFilteredProblems.sort((a, b) => b.solvedCount - a.solvedCount);
 
-                const displayLimit = 100;
-                const totalFound = filteredProblems.length;
-                const displayData = filteredProblems.slice(0, displayLimit);
-
-                if (displayData.length === 0) {
+                if (globalFilteredProblems.length === 0) {
                     statusDiv.className = "status error";
-                    statusDiv.textContent = "❌ Không tìm thấy bài tập nào. Hãy thử nới rộng khoảng Rating hoặc bớt Tag đi nhé.";
+                    statusDiv.textContent = "❌ No problems found. Try expanding the Rating range or removing some tags.";
                 } else {
                     statusDiv.className = "status success";
-                    statusDiv.innerHTML = `✅ Đã tìm thấy <strong>${totalFound}</strong> bài. (Đang hiển thị ${displayData.length} bài được giải nhiều nhất).`;
-                    
-                    displayData.forEach(p => {
-                        const tr = document.createElement('tr');
-                        const problemUrl = `https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`;
-                        
-                        if (p.isSolved) {
-                            tr.classList.add('row-solved');
-                        }
-
-                        const statusHtml = p.isSolved 
-                            ? `<span class="badge-solved">✅ Đã giải</span>` 
-                            : `<span class="badge-unsolved">-</span>`;
-
-                        const formattedTags = (p.tags || []).map(t => {
-                            if (includeTags.includes(t.toLowerCase())) return `<span class="tag-highlight">${t}</span>`;
-                            return t;
-                        }).join(', ');
-
-                        tr.innerHTML = `
-                            <td>${p.contestId}${p.index}</td>
-                            <td><a href="${problemUrl}" target="_blank">${p.name}</a></td>
-                            <td>${statusHtml}</td>
-                            <td style="color: #0366d6;"><strong>${p.rating}</strong></td>
-                            <td class="col-tags problem-tags">${formattedTags}</td>
-                            <td>${p.solvedCount}</td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                    
-                    // Cập nhật trạng thái hiển thị của các cột/dòng dựa trên checkbox
-                    toggleTags();
-                    toggleAC(); 
-                    
                     resultTable.style.display = "table";
+                    
+                    // Trigger the first chunk load
+                    loadMore();
                 }
             } catch (error) {
                 statusDiv.className = "status error";
                 let errorMsg = error.message;
                 
                 if (errorMsg.includes("Call limit exceeded")) {
-                    errorMsg = "Bạn đang bấm quá nhanh! Xin hãy đợi khoảng 3-4 giây rồi mới bấm lọc lại.";
+                    errorMsg = "You are clicking too fast! Please wait 3-4 seconds before filtering again.";
                 } else if (errorMsg.includes("was not found")) {
-                    errorMsg = `Codeforces báo lỗi: Bạn đã gõ sai chính tả một chủ đề nào đó (${error.message}). Hãy kiểm tra lại!`;
+                    errorMsg = `Codeforces error: You may have misspelled a tag (${error.message}). Please check again!`;
                 } else if (errorMsg.includes("Failed to fetch")) {
-                    errorMsg = "Không có kết nối mạng hoặc máy chủ Codeforces đang sập.";
+                    errorMsg = "No network connection or Codeforces server is down.";
                 }
 
-                statusDiv.innerHTML = `❌ <strong>LỖI:</strong> ${errorMsg}`;
-                alert(`LỖI: ${errorMsg}`);
+                statusDiv.innerHTML = `❌ <strong>ERROR:</strong> ${errorMsg}`;
+                alert(`ERROR: ${errorMsg}`);
             } finally {
                 btn.disabled = false;
-                btn.textContent = "Lọc Bài Tập Ngay";
+                btn.textContent = "Filter Problems";
             }
         }
     </script>
