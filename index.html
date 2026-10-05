@@ -120,15 +120,10 @@
         .random-meta {
             font-size: 14px;
             color: #4b5563;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
-        }
-        .random-tags {
-            font-size: 13px;
-            color: #6b7280;
-            margin-bottom: 16px;
         }
         .random-card-actions {
             display: flex;
@@ -278,11 +273,8 @@
         <div class="random-card-body">
             <h2><a id="randomTitle" href="#" target="_blank">1366A - Two Rabbits</a></h2>
             <div class="random-meta">
-                <span>Rating: <strong id="randomRating" style="color: #0366d6;">1200</strong></span>
-                <span>Solved by: <strong id="randomSolved">15420</strong></span>
                 <span>Status: <span id="randomStatus">-</span></span>
             </div>
-            <div class="random-tags" id="randomTags">Tags: dp, math</div>
         </div>
         <div class="random-card-actions">
             <a id="randomOpenBtn" href="#" target="_blank" class="btn-action open-btn">🚀 Open Problem</a>
@@ -327,7 +319,7 @@
         let globalCurrentIndex = 0;
         const chunkSize = 100;
         let currentIncludeTags = [];
-        let isCacheValid = false; // Đánh dấu bộ lọc có thay đổi hay chưa
+        let isCacheValid = false;
 
         function invalidateCache() {
             isCacheValid = false;
@@ -560,7 +552,7 @@
             }
         }
 
-        // TÍNH NĂNG RANDOM BÀI TẬP
+        // TÍNH NĂNG RANDOM BÀI TẬP (ĐÃ ẨN TAG, RATING, SỐ NGƯỜI AC)
         async function pickRandomProblem(isReRoll = false) {
             const randomCard = document.getElementById('randomCard');
             const hideAC = document.getElementById('hideACCheckbox').checked;
@@ -587,12 +579,10 @@
             const p = availableProblems[randomIndex];
             const problemUrl = `https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`;
 
-            // Cập nhật giao diện Random Card
+            // Cập nhật giao diện Random Card (Chỉ giữ Tên và Trạng thái)
             document.getElementById('randomTitle').textContent = `${p.contestId}${p.index} - ${p.name}`;
             document.getElementById('randomTitle').href = problemUrl;
             document.getElementById('randomOpenBtn').href = problemUrl;
-            document.getElementById('randomRating').textContent = p.rating || "Unrated";
-            document.getElementById('randomSolved').textContent = p.solvedCount.toLocaleString();
 
             const statusSpan = document.getElementById('randomStatus');
             if (p.isSolved) {
@@ -600,9 +590,6 @@
             } else {
                 statusSpan.innerHTML = `<span class="badge-unsolved">Not solved yet</span>`;
             }
-
-            const formattedTags = (p.tags || []).join(', ') || 'None';
-            document.getElementById('randomTags').innerHTML = `<strong>Tags:</strong> ${formattedTags}`;
 
             // Hiển thị khung Random
             randomCard.style.display = 'block';
